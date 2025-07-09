@@ -3,11 +3,8 @@ import numpy as np
 import os
 import requests
 from PIL import Image
-import matplotlib.pyplot as plt
-from io import BytesIO
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
-
 # -------------------- CONFIG --------------------
 MODEL_URL = "https://drive.google.com/uc?export=download&id=1p9pqC-Ba4aKdNcQploHjnaCVip5J07qe"
 MODEL_PATH = "Modelenv.v1.h5"
