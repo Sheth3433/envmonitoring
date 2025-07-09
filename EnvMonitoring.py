@@ -24,25 +24,48 @@ def download_and_load_model():
 
 model = download_and_load_model()
 
-# -------------------- STREAMLIT UI --------------------
-st.set_page_config(page_title="Satellite Land Classifier", layout="centered")
-st.title("🌍 Environmental Monitoring via Satellite")
-st.write("Upload a satellite image to classify it as **Cloudy**, **Desert**, **Green Area**, or **Water**.")
+# -------------------- UI SETUP --------------------
+st.set_page_config(
+    page_title="🌍 Land Cover Classification",
+    page_icon="🛰️",
+    layout="wide"
+)
 
-uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"])
+st.sidebar.title("🛰️ Satellite Image Analyzer")
+st.sidebar.markdown("Upload a satellite image and classify land cover types.")
+
+uploaded_file = st.sidebar.file_uploader("📤 Upload Image", type=["jpg", "jpeg", "png"])
+
+st.title("🌿 Environmental Monitoring Dashboard")
+
+col1, col2 = st.columns([1, 2])
 
 if uploaded_file:
-    image = Image.open(uploaded_file).convert("RGB").resize((256, 256))
-    st.image(image, caption="🖼️ Uploaded Image", use_container_width=True)
+    with col1:
+        image = Image.open(uploaded_file).convert("RGB")
+        resized_img = image.resize((256, 256))
+        st.image(image, caption="📷 Original Image", use_container_width=True)
 
-    # Preprocess image
-    img_array = img_to_array(image) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    with col2:
+        st.markdown("### 🔍 Classification Result")
 
-    # Predict
-    prediction = model.predict(img_array)[0]
-    predicted_label = CLASS_NAMES[np.argmax(prediction)]
-    confidence = np.max(prediction)
+        # Preprocess image
+        img_array = img_to_array(resized_img) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-    st.success(f"✅ Prediction: **{predicted_label}**")
-    st.info(f"📊 Confidence: **{confidence * 100:.2f}%**")
+        # Prediction
+        prediction = model.predict(img_array)[0]
+        predicted_label = CLASS_NAMES[np.argmax(prediction)]
+        confidence = np.max(prediction)
+
+        st.success(f"**🏷️ Predicted Class:** `{predicted_label}`")
+        st.info(f"**📊 Confidence Score:** `{confidence * 100:.2f}%`")
+
+        # Optional: Show full class probabilities
+        st.markdown("#### 📈 Class Probabilities")
+        for i, prob in enumerate(prediction):
+            st.write(f"🔸 {CLASS_NAMES[i]}: `{prob * 100:.2f}%`")
+
+else:
+    st.info("📥 Please upload an image from the sidebar to begin.")
+
