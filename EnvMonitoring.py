@@ -3,6 +3,7 @@ import numpy as np
 import os
 import requests
 from PIL import Image
+import matplotlib.pyplot as plt
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
@@ -33,7 +34,6 @@ st.set_page_config(
 
 st.sidebar.title("🛰️ Satellite Image Analyzer")
 st.sidebar.markdown("Upload a satellite image and classify land cover types.")
-
 uploaded_file = st.sidebar.file_uploader("📤 Upload Image", type=["jpg", "jpeg", "png"])
 
 st.title("🌿 Environmental Monitoring Dashboard")
@@ -43,8 +43,20 @@ col1, col2 = st.columns([1, 2])
 if uploaded_file:
     with col1:
         image = Image.open(uploaded_file).convert("RGB")
+        width, height = image.size
         resized_img = image.resize((256, 256))
         st.image(image, caption="📷 Original Image", use_container_width=True)
+
+        st.markdown(f"**🧾 Image Size:** `{width} x {height}` pixels")
+
+        # Optional: Show histogram
+        st.markdown("#### 🎨 Image Color Histogram")
+        fig, ax = plt.subplots()
+        for i, color in enumerate(['Red', 'Green', 'Blue']):
+            hist = np.array(image)[:, :, i].flatten()
+            ax.hist(hist, bins=25, alpha=0.5, label=color, color=color.lower())
+        ax.legend()
+        st.pyplot(fig)
 
     with col2:
         st.markdown("### 🔍 Classification Result")
@@ -58,13 +70,15 @@ if uploaded_file:
         predicted_label = CLASS_NAMES[np.argmax(prediction)]
         confidence = np.max(prediction)
 
-        st.success(f"**🏷️ Predicted Class:** `{predicted_label}`")
-        st.info(f"**📊 Confidence Score:** `{confidence * 100:.2f}%`")
+        st.success(f"🏷️ **Predicted Class:** `{predicted_label}`")
+        st.progress(float(confidence))  # progress bar
 
-        # Optional: Show full class probabilities
-        st.markdown("#### 📈 Class Probabilities")
-        for i, prob in enumerate(prediction):
-            st.write(f"🔸 {CLASS_NAMES[i]}: `{prob * 100:.2f}%`")
+        st.info(f"📊 **Confidence Score:** `{confidence * 100:.2f}%`")
+
+        # Probability chart
+        st.markdown("#### 📈 Class Probability Chart")
+        prob_chart = {CLASS_NAMES[i]: float(prediction[i]) for i in range(len(CLASS_NAMES))}
+        st.bar_chart(prob_chart)
 
 else:
     st.info("📥 Please upload an image from the sidebar to begin.")
