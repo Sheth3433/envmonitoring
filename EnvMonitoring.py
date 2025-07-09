@@ -4,6 +4,7 @@ import os
 import requests
 from PIL import Image
 import matplotlib.pyplot as plt
+from io import BytesIO
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
@@ -38,48 +39,67 @@ uploaded_file = st.sidebar.file_uploader("📤 Upload Image", type=["jpg", "jpeg
 
 st.title("🌿 Environmental Monitoring Dashboard")
 
-col1, col2 = st.columns([1, 2])
-
 if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
+    width, height = image.size
+    resized_img = image.resize((256, 256))
+
+    col1, col2 = st.columns(2)
     with col1:
-        image = Image.open(uploaded_file).convert("RGB")
-        width, height = image.size
-        resized_img = image.resize((256, 256))
         st.image(image, caption="📷 Original Image", use_container_width=True)
-
-        st.markdown(f"**🧾 Image Size:** `{width} x {height}` pixels")
-
-        # Optional: Show histogram
-        st.markdown("#### 🎨 Image Color Histogram")
-        fig, ax = plt.subplots()
-        for i, color in enumerate(['Red', 'Green', 'Blue']):
-            hist = np.array(image)[:, :, i].flatten()
-            ax.hist(hist, bins=25, alpha=0.5, label=color, color=color.lower())
-        ax.legend()
-        st.pyplot(fig)
+        st.markdown(f"**🧾 Size:** `{width} x {height}` pixels")
 
     with col2:
-        st.markdown("### 🔍 Classification Result")
+        st.image(resized_img, caption="📏 Resized Image (256×256)", use_container_width=True)
 
-        # Preprocess image
-        img_array = img_to_array(resized_img) / 255.0
-        img_array = np.expand_dims(img_array, axis=0)
+    # Preprocessing
+    img_array = img_to_array(resized_img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
 
-        # Prediction
-        prediction = model.predict(img_array)[0]
-        predicted_label = CLASS_NAMES[np.argmax(prediction)]
-        confidence = np.max(prediction)
+    # Prediction
+    prediction = model.predict(img_array)[0]
+    predicted_label = CLASS_NAMES[np.argmax(prediction)]
+    confidence = np.max(prediction)
 
-        st.success(f"🏷️ **Predicted Class:** `{predicted_label}`")
-        st.progress(float(confidence))  # progress bar
+    # Results
+    st.markdown("### 🔍 Classification Result")
+    st.success(f"🏷️ Predicted Class: `{predicted_label}`")
+    st.progress(float(confidence))
+    st.info(f"📊 Confidence Score: `{confidence * 100:.2f}%`")
 
-        st.info(f"📊 **Confidence Score:** `{confidence * 100:.2f}%`")
+    # Class probabilities chart
+    st.markdown("#### 📈 Class Probability Chart")
+    prob_chart = {CLASS_NAMES[i]: float(prediction[i]) for i in range(len(CLASS_NAMES))}
+    st.bar_chart(prob_chart)
 
-        # Probability chart
-        st.markdown("#### 📈 Class Probability Chart")
-        prob_chart = {CLASS_NAMES[i]: float(prediction[i]) for i in range(len(CLASS_NAMES))}
-        st.bar_chart(prob_chart)
+    # Histogram
+    st.markdown("#### 🎨 Image Color Histogram")
+    fig, ax = plt.subplots()
+    for i, color in enumerate(['Red', 'Green', 'Blue']):
+        hist = np.array(image)[:, :, i].flatten()
+        ax.hist(hist, bins=25, alpha=0.5, label=color, color=color.lower())
+    ax.legend()
+    st.pyplot(fig)
+
+    # Downloadable result
+    result_text = f"""Prediction Result
+----------------------
+Image Size: {width} x {height}
+Predicted Class: {predicted_label}
+Confidence: {confidence * 100:.2f}%
+
+Class Probabilities:
+"""
+    for i, cls in enumerate(CLASS_NAMES):
+        result_text += f"{cls}: {prediction[i] * 100:.2f}%\n"
+
+    result_bytes = BytesIO(result_text.encode("utf-8"))
+    st.download_button(
+        label="📥 Download Result as TXT",
+        data=result_bytes,
+        file_name="prediction_result.txt",
+        mime="text/plain"
+    )
 
 else:
     st.info("📥 Please upload an image from the sidebar to begin.")
-
