@@ -3,10 +3,11 @@ import numpy as np
 import os
 import requests
 from PIL import Image
-import matplotlib.pyplot as plt
 from io import BytesIO
+
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
+
 # -------------------- CONFIG --------------------
 MODEL_URL = "https://drive.google.com/uc?export=download&id=1p9pqC-Ba4aKdNcQploHjnaCVip5J07qe"
 MODEL_PATH = "Modelenv.v1.h5"
@@ -70,15 +71,6 @@ if uploaded_file:
     st.markdown("#### 📈 Class Probability Chart")
     prob_chart = {CLASS_NAMES[i]: float(prediction[i]) for i in range(len(CLASS_NAMES))}
     st.bar_chart(prob_chart)
-
-    # Histogram
-    st.markdown("#### 🎨 Image Color Histogram")
-    fig, ax = plt.subplots()
-    for i, color in enumerate(['Red', 'Green', 'Blue']):
-        hist = np.array(image)[:, :, i].flatten()
-        ax.hist(hist, bins=25, alpha=0.5, label=color, color=color.lower())
-    ax.legend()
-    st.pyplot(fig)
 
     # Downloadable result
     result_text = f"""Prediction Result
